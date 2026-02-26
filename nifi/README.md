@@ -23,7 +23,9 @@ It will help you to deploy and test a simple **Batch** pipeline using **Docker**
 - **NIFI:** use to ingest tables `client`, `product`, `sales`
 - **MINIO:** store result in `parquet` format. It use buckets `[client/product/sales]-bucket`
 - **PYTHON:** contains two folders:
+
 1- `python_mysql`: scripts use to add and list data in mysql
+
 2- `python_minio`: scripts use to add, list, read parquet and bucket in minio
 
 ## PORTS & configs
