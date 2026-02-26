@@ -1,0 +1,118 @@
+name: bigdata_nifi
+services:
+
+  nifi:
+    image: apache/nifi:1.24.0
+    container_name: nifi
+    hostname: nifi
+    restart: always
+    environment:
+      - NIFI_WEB_HTTPS_PORT=8443
+      - SINGLE_USER_CREDENTIALS_USERNAME=nifi_user
+      - SINGLE_USER_CREDENTIALS_PASSWORD=2jeanrf9iPJCwWoWmNC8h1p9Xujd1RWb
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://nifi:8443/nifi-api/access/config"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    volumes:
+      #- nifi_data:/opt/nifi/nifi-current/
+      - share_data:/partage
+    networks:
+      - bigdata
+    ports:
+      - "8887:8080"
+      - "8443:8443"
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    hostname: mysql
+    # mysql -u root -p'root_password' -e "GRANT ALL PRIVILEGES ON *.* TO 'nanp'@'%'; FLUSH PRIVILEGES;"
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_USER=nanp
+      - MYSQL_PASSWORD=nanp
+      - MYSQL_DATABASE=nanp_db
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - share_data:/partage
+    networks:
+      - bigdata
+    ports:
+      - "8889:3306"
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio
+    hostname: minio
+    ports:
+      - "9030:9000" # API S3
+      - "9031:9001" # Console Web (UI)
+    environment:
+      # Access Key (Username) et de Secret Key (Password)
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    volumes:
+      - minio_data:/data
+      - share_data:/partage
+    command: server /data --console-address ":9001"
+    restart: always
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - bigdata
+
+  python_base:
+    build:
+      context: .
+      dockerfile: dockerfile_python
+    container_name: python_base
+    hostname: python_base
+    restart: always
+    healthcheck:
+      test: ["CMD", "python", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./python:/app
+      - share_data:/partage
+    networks:
+      - bigdata
+
+volumes:
+  mysql_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/mysql
+      o: bind
+  minio_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/minio
+      o: bind
+  share_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/share_folder
+      o: bind
+
+networks:
+  bigdata:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: bigdata_bridge
