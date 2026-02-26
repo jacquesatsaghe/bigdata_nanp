@@ -6,7 +6,9 @@ bigdata tps and stuffs
 </p>
 
 **User:** `nanp` (you can change it from each `compose.yml` files)
+
 **Database:** `TYROK`
+
 **mysql client**: https://dbeaver.io/ or `SHELL`
 
 ---
@@ -59,10 +61,10 @@ CREATE TABLE sales (
 
 ### Some commands
 ```bash
-# you must first acces to postgres container
+# you must first acces to mysql container
 docker exec -it mysql bash
 
-# some postgres commands
+# some mysql commands
 # 1- connect to a database: mysql -h [hôte] -P [port] -U [utilisateur] -d [nom_base] -p
 mysql -h localhost -p 8889 -U nanp -d TYROK -p # password in compose.yml
 

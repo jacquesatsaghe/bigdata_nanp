@@ -15,6 +15,7 @@ bigdata tps and stuffs
 ---
 
 **Stack** is a simple *BigData batch stack* running over *Docker*.
+
 It will help you to deploy and test a simple **Batch** pipeline using **Docker** and **nifi**.
 
 **Components:**
@@ -65,7 +66,7 @@ volumes:
 
 ### Run project & some cleaning ops
 
-```bash
+```sh
 # Be sure to be in the folder with compose.yml file
 # start all
 docker compose up -d
@@ -143,15 +144,25 @@ python main.py put --bucket my-bucket --local /path/to/local/file
 
 #### nifi
 0- url: http://localhost:8443/nifi/login
+
 1- just import template `mysql-nifi-minio.xml`
+
 2- change username and password in `QueryDatabaseTablerecord` and `PutS3Object`
+
 3- create `jars` folder inside your `share_data` volume and copy all jars files inside
+
 4- some config settings: 
+
 Pool connection -> **Database Connection URL**: `jdbc:mysql://mysql:3306/TYROK`
+
 Pool connection -> **Database Driver ClassName**: `com.mysql.jdbc.Driver`
+
 Pool connection -> **Database Driver Location(s)**: `/partage/jars/mysql-connector-java-8.0.30.jar`
+
 update attribute -> **filename**: `client_${now():format('yyyyMMdd_HHmmss')}.parquet`
+
 PutS3Oject -> **EndPoint Override URL**: `http://minio:9000`
+
 
 <p align="center">
     <picture>
