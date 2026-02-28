@@ -84,40 +84,6 @@ services:
     ports:
       - "8091:8081"
 
-  #kafka-connect:
-  #  image: confluentinc/cp-kafka-connect:7.5.0
-  #  hostname: kafka-connect
-  #  container_name: kafka-connect
-  #  depends_on:
-  #    kafka:
-  #      condition: service_healthy # Attend que le healthcheck de 'kafka' passe
-  #    schema-registry:
-  #      condition: service_healthy # Attend que le healthcheck de 'schema-registry' passe
-  #  environment:
-  #    CONNECT_BOOTSTRAP_SERVERS: 'kafka:9092'
-  #    CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
-  #    CONNECT_GROUP_ID: 'kafka-connect-group'
-  #    CONNECT_CONFIG_STORAGE_TOPIC: 'kafka-connect-configs'
-  #    CONNECT_OFFSET_STORAGE_TOPIC: 'kafka-connect-offsets'
-  #    CONNECT_STATUS_STORAGE_TOPIC: 'kafka-connect-status'
-  #    CONNECT_KEY_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'
-  #    CONNECT_VALUE_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'
-  #    CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: 'false'
-  #    CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: 'false'
-  #    CONNECT_PLUGIN_PATH: '/usr/share/java,/usr/share/confluent-hub-components'
-  #  healthcheck:
-  #    test: ["CMD-SHELL", "curl -f http://localhost:8083/ || exit 1"]
-  #    interval: 30s
-  #    timeout: 10s
-  #    retries: 5
-  #    start_period: 30s
-  #  networks:
-  #    - bigdata
-  #  volumes:
-  #    - share_data:/partage
-  #  ports:
-  #    - "8093:8083"
-
   connect:
     image: confluentinc/cp-kafka-connect-base:7.7.7
     #size: 1.3GB
@@ -162,7 +128,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8083/"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
     command:
       - /bin/bash
       - -c
@@ -195,6 +162,25 @@ services:
       retries: 3
     networks:
       - bigdata
+
+  python_base:
+    build:
+      context: .
+      dockerfile: dockerfile_python
+    container_name: python_base
+    hostname: python_base
+    restart: always
+    healthcheck:
+      test: ["CMD", "python", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./python:/app
+      - share_data:/partage
+    networks:
+      - bigdata
+
 
 volumes:
   mysql_data:
