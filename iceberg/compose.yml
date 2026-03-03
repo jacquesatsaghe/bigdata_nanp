@@ -2,7 +2,8 @@ name: bigdata_nifi
 services:
 
   catalog:
-    image: ghcr.io/projectnessie/nessie:0.107.3-java
+    #https://clickhouse.com/docs/use-cases/data-lake/nessie-catalog
+    image: ghcr.io/projectnessie/nessie:0.99.0
     container_name: catalog
     hostname: catalog
     restart: always
@@ -17,43 +18,87 @@ services:
     environment:
       # Configuration de Nessie pour utiliser MinIO comme backend de stockage
       # Vous pouvez ajuster ces variables en fonction de votre configuration MinIO
-      NESSIE_STORAGE_TYPE: "S3"
-      NESSIE_S3_ENDPOINT: "http://minio:9000"
-      NESSIE_S3_REGION: "us-east-1"
-      NESSIE_S3_ACCESS_KEY: "admin"
-      NESSIE_S3_SECRET_KEY: "password123"
-      NESSIE_S3_BUCKET: "nessie-bucket"
-      NESSIE_VERSION_STORE_TYPE: IN_MEMORY # Utiliser ROCKSDB ou MONGODB pour de la persistance réelle
-      QUARKUS_HTTP_PORT: 19120
-      QUARKUS_LOG_LEVEL: INFO
-      NESSIE_SERVER_SEND_STACK_TRACE_TO_CLIENT: true
+      - nessie.version.store.type=IN_MEMORY
+      - nessie.catalog.default-warehouse=warehouse
+      - nessie.catalog.warehouses.warehouse.location=s3://nessie-bucket/
+      - nessie.catalog.service.s3.default-options.endpoint=http://minio:9000/
+      - nessie.catalog.service.s3.default-options.access-key=urn:nessie-secret:quarkus:nessie.catalog.secrets.access-key
+      - nessie.catalog.service.s3.default-options.path-style-access=true
+      - nessie.catalog.service.s3.default-options.auth-type=STATIC
+      - nessie.catalog.secrets.access-key.name=admin
+      - nessie.catalog.secrets.access-key.secret=password123
+      - nessie.catalog.service.s3.default-options.region=us-east-1
+      - nessie.server.authentication.enabled=false
+      # persistance avec une base de données relationnelle (ex: MySQL/MariaDB)
+      ## Configuration du stockage
+      #- NESSIE_VERSION_STORE_TYPE=JDBC
+      #- NESSIE_VERSION_STORE_PERSIST_JDBC_DATASOURCE=mariadb # MySQL utilise le driver MariaDB compatible
+      #
+      ## Configuration de la source de données (Quarkus)
+      #- QUARKUS_DATASOURCE_MARIADB_JDBC_URL=jdbc:mariadb://mysql_db:3306/nessie
+      #- QUARKUS_DATASOURCE_MARIADB_USERNAME=nessie_user
+      #- QUARKUS_DATASOURCE_MARIADB_PASSWORD=nessie_password
     healthcheck:
       test: ["CMD", "curl", "-f", "http://catalog:19120/api/v1/trees"]
-      interval: 30s
+      interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 5s
     networks:
       - bigdata
 
-  catalog-admin:
-    image: ghcr.io/projectnessie/nessie-server-admin:0.107.3-java
-    container_name: catalog-admin
-    hostname: catalog-admin
+  # 4. Moteur de requête SQL Trino
+  # coordinator=true (Trino en mode coordonnateur)
+  # username: trino
+  # password: NONE (authentification désactivée pour simplifier la configuration)
+  trino:
+    image: trinodb/trino:479
+    container_name: trino
+    hostname: trino
     restart: always
-    environment:
-      # URL interne au réseau Docker pour contacter le serveur
-      QUARKUS_REST_CLIENT_NESSIE_CLIENT_BASE_URI: http://catalog:19120/api/v1
-      QUARKUS_HTTP_PORT: 8081
-      QUARKUS_REST_CLIENT_NESSIE_CLIENT_READ_TIMEOUT: 30000
-      # Config logging
-      QUARKUS_LOG_CONSOLE_ENABLE: true
-      QUARKUS_LOG_LEVEL: INFO
     ports:
-      - 8481:8081
-    depends_on:
-      - catalog
+      - "18080:8080"
     volumes:
+      - ./trino/config:/etc/trino
+      - ./trino/config-coordinator.properties:/etc/trino/config.properties:ro
+      - ./trino/node-coordinator.properties:/etc/trino/node.properties:ro
       - share_data:/partage
+    healthcheck:
+      # On teste si l'API Trino répond sur le port 8080
+      test: ["CMD", "curl", "-f", "http://trino:8080/v1/info"]
+      interval: 5s    # Fréquence du test
+      timeout: 5s      # Temps d'attente avant échec
+      retries: 5       # Nombre d'essais avant de marquer "unhealthy"
+      start_period: 5s # Temps laissé à Trino pour démarrer avant le 1er test
+    depends_on:
+      catalog:
+        condition: service_healthy
+    networks:
+      - bigdata
+
+  # 4. Moteur de requête SQL Trino
+  # coordinator=false (Trino en mode worker)
+  trino-worker:
+    image: trinodb/trino:479
+    container_name: trino-worker
+    hostname: trino-worker
+    restart: always
+    #ports:
+    #  - "18081:8081"
+    volumes:
+      - ./trino/config:/etc/trino
+      - ./trino/config-worker.properties:/etc/trino/config.properties:ro
+      - ./trino/node-worker-1.properties:/etc/trino/node.properties:ro
+      - share_data:/partage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://trino-worker:8081/v1/info"]
+      interval: 5s    # Fréquence du test
+      timeout: 5s      # Temps d'attente avant échec
+      retries: 5       # Nombre d'essais avant de marquer "unhealthy"
+      start_period: 5s # Temps laissé à Trino pour démarrer avant le 1er test
+    depends_on:
+      trino:
+        condition: service_healthy
     networks:
       - bigdata
 
@@ -75,9 +120,10 @@ services:
     restart: always
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
-      interval: 30s
+      interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 5s
     networks:
       - bigdata
 
@@ -87,7 +133,7 @@ volumes:
     driver_opts:
       type: none
       device: /home/patrick/Téléchargements/ressources/nessie
-      o: bind
+      o: bind  
   minio_data:
     driver: local # Define the driver and options under the volume name
     driver_opts:
