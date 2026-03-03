@@ -13,6 +13,7 @@ services:
       minio:
         condition: service_healthy
     volumes:
+      - nessie_data:/data
       - share_data:/partage
     environment:
       # Configuration de Nessie pour utiliser MinIO comme backend de stockage
@@ -83,6 +84,8 @@ services:
     container_name: trino-worker
     hostname: trino-worker
     restart: always
+    #ports:
+    #  - "18081:8081"
     volumes:
       - ./trino/config:/etc/trino
       - ./trino/config-worker.properties:/etc/trino/config.properties:ro
@@ -114,8 +117,6 @@ services:
     volumes:
       - minio_data:/data
       - share_data:/partage
-    # mc alias set myminio http://minio:9000 admin password123;
-    # mc rb --force myminio/test-bucket
     command: server /data --console-address ":9001"
     restart: always
     healthcheck:
@@ -127,75 +128,25 @@ services:
     networks:
       - bigdata
 
-  # minio warehouse location: s3://polaris-bucket/warehouse
-  polaris:
-    image: apache/polaris:1.3.0-incubating
-    container_name: polaris
-    hostname: polaris
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "http://polaris:8182/q/health"]
-      interval: 5s
-      timeout: 10s
-      retries: 5
-      start_period: 5s
-    ports:
-      - 8161:8181 # API REST + Console (selon version)
-    depends_on:
-      minio:
-        condition: service_healthy
-    environment:
-      POLARIS_BOOTSTRAP: true
-      POLARIS_PERSISTENCE_TYPE: in-memory
-      QUARKUS_OTEL_SDK_DISABLED: true
-      polaris.features."ALLOW_INSECURE_STORAGE_TYPES": true
-      polaris.features."SUPPORTED_CATALOG_STORAGE_TYPES": "[\"S3\"]"
-      polaris.readiness.ignore-severe-issues: true
-      #POLARIS_DEFAULT_REALM: POLARIS
-      #POLARIS_DEFAULT_REALM: ${POLARIS_REALM}
-      POLARIS_REALM_CONTEXT_TYPE: default
-      POLARIS_REALM_CONTEXT_REALMS: POLARIS
-      POLARIS_REALM_CONTEXT_HEADER_NAME: Polaris-Realm
-      POLARIS_FEATURES_SUPPORTED_CATALOG_STORAGE_TYPES: S3 #S3,GCS,OSS,AZURE,FILE      
-      POLARIS_BOOTSTRAP_CREDENTIALS: POLARIS,polaris,password
-      #POLARIS_BOOTSTRAP_CREDENTIALS: polaris,password
-      #POLARIS_BOOTSTRAP_CREDENTIALS: ${POLARIS_REALM},${ROOT_CLIENT_ID},${ROOT_CLIENT_SECRET}
-
-      # S3 endpoint for MinIO
-      AWS_REGION: ${AWS_REGION}
-      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
-      AWS_ENDPOINT_URL_S3: ${MINIO_ENDPOINT}
-      quarkus.otel.sdk.disabled: true
-      polaris.features.DROP_WITH_PURGE_ENABLED: true
-    volumes:
-      - share_data:/partage
-    networks:
-      - bigdata
-
-  create-polaris-catalog:
-    image: alpine/curl:latest
-    container_name: create-polaris-catalog
-    hostname: create-polaris-catalog
-    restart: "no"
-    depends_on:
-      polaris:
-        condition: service_healthy
-    volumes:
-      - ./scripts/create-polaris-catalog.sh:/create-polaris-catalog.sh
-      - share_data:/partage
-    #command: ["/bin/sh", "-c", "apk add --no-cache jq && chmod +x /create-polaris-catalog.sh && /create-polaris-catalog.sh"]
-    command:
-      - /bin/sh
-      - -c
-      - |
-        apk add --no-cache jq
-        source /create-polaris-catalog.sh
-    networks:
-      - bigdata
-    
-
 volumes:
+  nessie_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/nessie
+      o: bind
+  polaris_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/polaris
+      o: bind
+  postgrescat_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/postgrescat
+      o: bind
   minio_data:
     driver: local # Define the driver and options under the volume name
     driver_opts:

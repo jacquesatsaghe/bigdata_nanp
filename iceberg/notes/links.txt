@@ -1,0 +1,9 @@
+# snowflake local (need license):
+https://blog.localstack.cloud/integrating-polaris-with-localstack-for-snowflake-and-trino/
+
+# simple trino-polaris-minio:
+https://medium.com/@gilles.philippart/build-a-data-lakehouse-with-apache-iceberg-polaris-trino-minio-349c534ecd98
+
+# simple flink-polaris-minio:
+https://medium.com/@gilles.philippart/build-a-data-lakehouse-with-apache-iceberg-polaris-trino-minio-349c534ecd98
+
