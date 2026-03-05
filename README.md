@@ -4,6 +4,7 @@ bigdata tps and stuffs
 **Folders:**
 - **[mysql](https://github.com/ngoupatrick/bigdata_nanp/tree/main/mysql)**: Contains sql scripts to setup mysql database
 - **[nifi](https://github.com/ngoupatrick/bigdata_nanp/tree/main/nifi)**: docker labs to ingest datas from mysql database to minio throw nifi
+- **[redpanda_stream](https://github.com/ngoupatrick/bigdata_nanp/tree/main/redpanda_stream)**: docker labs to ingest datas from mysql database to minio throw kafka (redpanda) in streaming
 
 ## Versions
 
@@ -14,7 +15,7 @@ bigdata tps and stuffs
 
 ## Install
 
-### Docker (if not already installed)
+### [Docker] (if not already installed)
 
 - **[Install](https://docs.docker.com/engine/install/)**
 
@@ -61,23 +62,7 @@ newgrp docker # Or restart session
 ```
 ---
 
-### Portainer
-```bash
-# Create Docker Volume 'portainer_data'
-sudo docker volume create --driver local --opt type=none --opt device={path_to_your_local_folder} --opt o=bind portainer_data
-
-# Inspect the volume (check)
-docker volume inspect portainer_data
-
-# Start Portainer
-sudo docker run -d -p 7003:8000 -p 7443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /run/docker.sock:/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
-```
-
-#### Access from browser **`https://localhost:7443`**
-
----
-
-### Run project & some cleaning ops
+### Docker - Run project & some cleaning ops
 
 ```bash
 # Be sure to be in the folder with compose.yml file
@@ -102,3 +87,110 @@ docker container prune --filter "until=24h"
 # remove unused volume
 docker volume prune
 ```
+
+---
+
+### [Portainer]
+```bash
+# Create Docker Volume 'portainer_data'
+sudo docker volume create --driver local --opt type=none --opt device={path_to_your_local_folder} --opt o=bind portainer_data
+
+# Inspect the volume (check)
+docker volume inspect portainer_data
+
+# Start Portainer
+sudo docker run -d -p 7003:8000 -p 7443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /run/docker.sock:/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
+```
+
+#### Access from browser **`https://localhost:7443`**
+
+---
+
+### [Minio]
+```bash
+# delete a bucket
+docker exec minio mc rb --force myalias/[nom-du-bucket]
+```
+
+#### Access from browser **`https://localhost:9031`**
+
+---
+
+### [Python console client]
+
+There are two clients: **`python_mysql`** and **`python_minio`**
+
+#### [Python Mysql client]
+
+use to query mysql tables **`[client, product, sale]`**
+
+**code location**: **`[base_github_folder]/[Project_folder]/python/python_mysql`**
+
+**main py file**: **`main.py`**
+
+**config py file**: **`config.py`** (change mysql connection config)
+
+```bash
+# Some commands
+
+# help
+docker exec python_base python /app/python/python_mysql/main.py --help
+
+# test mysql connection
+docker exec python_base python /app/python/python_mysql/main.py test
+
+# list all clients, products and sales
+docker exec python_base python /app/python/python_mysql/main.py list client
+docker exec python_base python /app/python/python_mysql/main.py list product
+docker exec python_base python /app/python/python_mysql/main.py list sales
+
+# add datas
+docker exec python_base python /app/python/python_mysql/main.py client --code "C003" --name "Entreprise XYZ"
+docker exec python_base python /app/python/python_mysql/main.py product --code "P-TAB" --name "Tablette" --pu 299.99
+docker exec python_base python /app/python/python_mysql/main.py sale --client_id 1 --product_id 2 --qte 3 --total 899.97
+
+```
+
+
+#### [Python Minio client]
+
+use to query minio csv or parquet files
+
+**code location**: **`[base_github_folder]/[Project_folder]/python/python_minio`**
+
+**main py file**: **`main.py`**
+
+**env file**: **`.env.example`** -> Rename to **`.env`** (minio configs, don't forget to change values if necessary)
+
+
+```bash
+# Some commands
+
+# help
+docker exec python_base python /app/python/python_minio/main.py --help
+
+# list csv or parquet files directly under minio path
+docker exec python_base python /app/python/python_minio/main.py list --bucket [my-bucket]
+
+# list all csv or parquet files under a bucket
+docker exec python_base python /app/python/python_minio/main.py list-all --bucket [my-bucket]
+
+# count all csv or parquet files under a bucket
+docker exec python_base python /app/python/python_minio/main.py count --bucket [my-bucket]
+
+# get the content of a specific csv or parquet files under a bucket
+docker exec python_base python /app/python/python_minio/main.py read --bucket [my-bucket] --file [my-file.csv | my-file.parquet] --style [grid | fancy_grid | simple]
+
+# get the content of all csv or parquet files under a bucket
+docker exec python_base python /app/python/python_minio/main.py read-all --bucket [my-bucket] --style [grid | fancy_grid | simple]
+
+# send csv or parquet files to minio bucket
+docker exec python_base python /app/python/python_minio/main.py put --bucket [my-bucket] --local [/path/to/local/file] --remote [name_in_minio]
+
+
+```
+
+---
+
+
+

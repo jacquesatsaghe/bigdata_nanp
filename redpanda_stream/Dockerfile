@@ -8,7 +8,7 @@ RUN microdnf install -y unzip
 # 2. NETTOYAGE : Supprime tous les connecteurs sauf MySQL et Postgres
 # On garde uniquement les répertoires contenant "mysql" ou "postgres" dans /kafka/connect
 RUN find /kafka/connect -mindepth 1 -maxdepth 1 -type d \
-    ! -name "*mysql*" ! -name "*postgres*"  ! -name "*avro*" \
+    ! -name "*mysql*"  ! -name "*avro*" \
     -exec rm -rf {} +
 
 # plugins disponibles :
