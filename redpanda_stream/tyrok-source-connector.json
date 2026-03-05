@@ -1,5 +1,5 @@
 {
-    "name": "tyrok-source-connector", 
+    "name": "tyrok-source-connector",
     "config": {
         "connector.class": "io.debezium.connector.mysql.MySqlConnector", 
         "tasks.max": "1",

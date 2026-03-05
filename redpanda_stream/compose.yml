@@ -118,9 +118,9 @@ services:
       - share_data:/partage
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
-      interval: 15s
+      interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
       start_period: 5s
     networks:
       - bigdata
@@ -178,9 +178,9 @@ services:
       - share_data:/partage
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
-      interval: 15s
+      interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
       start_period: 5s
     networks:
       - bigdata
@@ -210,10 +210,10 @@ services:
       - share_data:/partage
       - ./config.yml:/tmp/config.yml:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
-      interval: 15s
+      test: ["CMD-SHELL", "curl -f http://redpanda-console:8080/health || exit 1"]
+      interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
       start_period: 5s
     depends_on:
       redpanda-0:
@@ -231,11 +231,11 @@ services:
     volumes:
       - share_data:/partage
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/"]
-      interval: 10s # Intervalle entre les tentatives de healthcheck
+      test: ["CMD", "curl", "-f", "http://connect:8083/"]
+      interval: 5s # Intervalle entre les tentatives de healthcheck
       timeout: 5s # Durée maximale pour considérer une tentative de healthcheck comme échouée
       retries: 10 # Nombre de tentatives avant de considérer le service comme non sain
-      start_period: 30s # Durée d'attente avant de commencer les healthchecks (le temps que le service démarre)
+      start_period: 5s # Durée d'attente avant de commencer les healthchecks (le temps que le service démarre)
     environment:
       BOOTSTRAP_SERVERS: redpanda-1:9092,redpanda-2:9092,redpanda-0:9092
       ADVERTISED_HOST_NAME: connect
@@ -276,10 +276,10 @@ services:
       - MYSQL_DATABASE=nanp_db
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 5s
     volumes:
       - mysql_data:/var/lib/mysql
       - ./my-custom.cnf:/etc/mysql/conf.d/my-custom.cnf
@@ -307,9 +307,10 @@ services:
     restart: always
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
-      interval: 30s
+      interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 10
+      start_period: 5s
     networks:
       - bigdata
 
@@ -320,9 +321,9 @@ services:
     hostname: gotify
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 10
       start_period: 5s
     environment:
       GOTIFY_DEFAULTUSER_NAME: admin
@@ -356,9 +357,10 @@ services:
     restart: always
     healthcheck:
       test: ["CMD", "python", "--version"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     volumes:
       - ./python/notifier:/app
       - share_data:/partage
@@ -374,10 +376,10 @@ services:
     restart: always
     healthcheck:
       test: ["CMD", "curl --fail http://localhost:8501/_stcore/health || exit 1"]
-      interval: 10s # Intervalle entre les tentatives de healthcheck
+      interval: 5s # Intervalle entre les tentatives de healthcheck
       timeout: 5s # Durée maximale pour considérer une tentative de healthcheck comme échouée      retries: 5
-      start_period: 30s # Durée d'attente avant de commencer les healthchecks (le temps que le service démarre)
-      retries: 3
+      start_period: 5s # Durée d'attente avant de commencer les healthchecks (le temps que le service démarre)
+      retries: 10 # Nombre de tentatives avant de considérer le service comme non sain
     ports:
       - "8561:8501"
     volumes:
