@@ -311,7 +311,7 @@ command: >
 # syntax URL gotify://gotify/[key_channel]
 # the key_channel is generated on gotify UI [http://localhost:8023/]
 GOTIFY_URL=gotify://gotify/A_dT4Gc-u-Mp3Ei
-# LIMIT_MESSAGES mean that, you every 4 messages going throw Kafka, you will receive a notification
+# LIMIT_MESSAGES mean that, every 4 messages going throw Kafka, you will receive a notification
 LIMIT_MESSAGES=4
 ```
 
@@ -319,27 +319,27 @@ LIMIT_MESSAGES=4
 
 * #### **step 9:** Set up Source Mysql json connector. Config file **`tyrok-source-connector.json`**.
 
-  * ##### **"database.hostname": "mysql",** | **"database.port": "3306",** => Mysql host location
+  * ##### **`"database.hostname": "mysql",`** | **`"database.port": "3306",`** => Mysql host location
 
-  * ##### **"database.user": "nanp"** | **"database.password": "nanp",** => Mysql credentials
+  * ##### **`"database.user": "nanp"`** | **`"database.password": "nanp",`** => Mysql credentials
 
-  * ##### **"database.server.id": "1",** | **"database.include.list": "TYROK",** | **"table.include.list": "TYROK.client",** => Databases and tables ingested
+  * ##### **`"database.server.id": "1",`** | **`"database.include.list": "TYROK",`** | **`"table.include.list": "TYROK.client",`** => Databases and tables ingested
 
-  * ##### **"topic.creation.enable": true,** => Will create topic if doesn't exists in kafka
+  * ##### **`"topic.creation.enable": true,`** => Will create topic if doesn't exists in kafka
 
-  * ##### **"topic.creation.default.partitions": "1",** | **"topic.creation.default.replication.factor": "1",** => Replication factor accross kafka cluster
+  * ##### **`"topic.creation.default.partitions": "1",`** | **`"topic.creation.default.replication.factor": "1",`** => Replication factor accross kafka cluster
 
 * #### **step 10:** Set up Sink Minio json connector. Config file **`tyrok-sink-connector.json`**.
 
-  * ##### **"tasks.max": "2",** => Concurent tasks used to ingest data
+  * ##### **`"tasks.max": "2",`** => Concurent tasks used to ingest data
 
-  * ##### **"store.url": "http://minio:9000",** | **"s3.bucket.name": "client-redpanda",** | **"s3.region": "us-east-1",** => Minio Dest location
+  * ##### **`"store.url": "http://minio:9000",`** | **`"s3.bucket.name": "client-redpanda",`** | **`"s3.region": "us-east-1",`** => Minio Dest location
 
-  * ##### **"aws.access.key.id": "admin",** | **"aws.secret.access.key": "password123",** => Minio Credentials
+  * ##### **`"aws.access.key.id": "admin",`** | **`"aws.secret.access.key": "password123",`** => Minio Credentials
 
-  * ##### **"format.class": "io.confluent.connect.s3.format.parquet.ParquetFormat",** | **"parquet.codec": "snappy", ** => files format and compression of parquet files in minio
+  * ##### **`"format.class": "io.confluent.connect.s3.format.parquet.ParquetFormat",`** | **`"parquet.codec": "snappy",`** => files format and compression of parquet files in minio
 
-  * ##### **"partitioner.class": "io.confluent.connect.storage.partitioner.TimeBasedPartitioner",** | **"path.format": "'year'=YYYY/'month'=MM/'day'=dd/'hour'=HH"** => will store data in minio folder with partitions Year, Month, Day and Hour
+  * ##### **`"partitioner.class": "io.confluent.connect.storage.partitioner.TimeBasedPartitioner",`** | **`"path.format": "'year'=YYYY/'month'=MM/'day'=dd/'hour'=HH",`** => will store data in minio folder with partitions Year, Month, Day and Hour
 
 * #### **step 11:** Start your project inside **`compose.yml`**.
 
