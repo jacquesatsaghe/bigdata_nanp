@@ -26,15 +26,15 @@ It will help you to deploy and test a simple **Streaming** pipeline using **Dock
 ## **Components:**
 
 - **mysql:** contains database `TYROK`
-- **kafka cluster:** Spread over three nodes (`redpanda-0`, `redpanda-1`, `redpanda-2`). use to ingest tables `client`, `product`, `sales`. `redpanda-0` act as `master node` and the two others as `slave nodes`. **NOTES:** If it's take too much resources, comment or shutdown `redpanda-1` and `redpanda-2`
-- **redpanda-console:** UI use to manage kafka (redpanda) cluster `[Topics, Connectors, Consure Groups]`.
+- **kafka cluster:** Spread over three nodes (`redpanda-0`, `redpanda-1`, `redpanda-2`). used to ingest tables `client`, `product`, `sales`. `redpanda-0` act as `master node` and the two others as `slave nodes`. **NOTES:** If it's take too much resources, comment or shutdown `redpanda-1` and `redpanda-2`
+- **redpanda-console:** UI used to manage kafka (redpanda) cluster `[Topics, Connectors, Consure Groups]`.
 - **minio:** store result in `parquet` format. It use bucket `client-redpanda`.
-- **connect:** Use to launch `source (mysql, debezium, tyrok-source-connector.json)` and `sink (S3, confluent, tyrok-sink-connector.json) connectors`.
-- **notifier-service:** Use to `monitoring` kafka topics and send `alert` to app like `slack or telegram` (in this case `gotify`)
+- **connect:** used to launch `source (mysql, debezium, tyrok-source-connector.json)` and `sink (S3, confluent, tyrok-sink-connector.json) connectors`.
+- **notifier-service:** used to `monitoring` kafka topics and send `alert` to app like `slack or telegram` (in this case `gotify`)
 - **gotify:** Notification app client like `slack or telegram`.
-- **setup-automation:** Use to `initialize Mysql (User, databases and tables)`, and also `launch connectors source and sink`. You disable it before launching the stack.
+- **setup-automation:** used to `initialize Mysql (User, databases and tables)`, and also `launch connectors source and sink`. You disable it before launching the stack.
 - **streamlit_app:** `Client App for Mysql`. You can find `code in folder python/streamlit`.
-- **streamlit-dashboard:** `Client App for Minio`. Use to see every datas push inside `Minio bucket client-redpanda` with some `stats`. You can find `code in folder python/streamlit-result`.
+- **streamlit-dashboard:** `Client App for Minio`. used to see every datas push inside `Minio bucket client-redpanda` with some `stats`. You can find `code in folder python/streamlit-result`.
 - **python_base:** Container used to interact with `Mysql (folder python/python_mysql)` and `Minio (folder python/python_minio)`.
 
 ---
@@ -53,13 +53,13 @@ It will help you to deploy and test a simple **Streaming** pipeline using **Dock
 
 4- **python:** contains five folders:
 
-- `python_mysql`: scripts use to add and list data in mysql
+- `python_mysql`: scripts used to add and list data in mysql
 
-- `python_minio`: scripts use to add, list, read parquet and bucket in minio
+- `python_minio`: scripts used to add, list, read parquet and bucket in minio
 
-- `notifier`: scripts use to send notification a client like `Telegram, Slack`. In this case we use `GOTIFY`
+- `notifier`: scripts used to send notification a client like `Telegram, Slack`. In this case we use `GOTIFY`
 
-- `streamlit`: UI to interact with `MYSQL tables`, like an app install on a `client side`. use to populate (simulate) datas
+- `streamlit`: UI to interact with `MYSQL tables`, like an app install on a `client side`. used to populate (simulate) datas
 
 - `streamlit-result`: UI to read datas ingest throw `KAFKA in MINIO`. it's refresh every `15s`.
 
@@ -71,11 +71,11 @@ It will help you to deploy and test a simple **Streaming** pipeline using **Dock
 
 - `setup_tyrok.sql`: Code SQL intialize databases and tables.
 
-- `setup_pipeline.sh`: Shell script use to run `.sql files` and `deploy sink and source connectors`.
+- `setup_pipeline.sh`: Shell script used to run `.sql files` and `deploy sink and source connectors`.
 
 6- **config.yml:** config use by `redpanda-console container` to connect to `kafka cluster`. Sample file is **`redpanda-console-config.yaml`**
 
-7- **tyrok-source-connector.json & tyrok-sink-connector.json:** config use to deploy source and sink connectors
+7- **tyrok-source-connector.json & tyrok-sink-connector.json:** config used to deploy source and sink connectors
 
 ---
 
