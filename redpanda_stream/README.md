@@ -237,11 +237,11 @@ volumes:
 
 ### **Configs & setup**
 
-* #### **Step 1:** Create all folders inside your main host (see volumes below)
+* #### **Step 1:** Create all volumes folders inside your main host (see volumes above)
 
 * #### **step 2:** Clone the repo and move to folder **`redpanda_stream`**
 
-* #### **step 3:** Change volumes path inside **`compose.yml`** file under section **`volumes:`** (see below)
+* #### **step 3:** Change volumes path inside **`compose.yml`** file under section **`volumes:`** (see above)
 
 * #### **step 4:** Set up Kafka console web UI. Configs file **`config.yml`**.
 
