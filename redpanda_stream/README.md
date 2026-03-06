@@ -145,6 +145,123 @@ volumes:
 
 ---
 
+### **Configs & setup**
+
+* #### **Step 1:** Create all folders inside your main host (see volumes below)
+
+* #### **step 2:** Clone the repo and move to folder **`redpanda_stream`**
+
+* #### **step 3:** Change volumes path inside **`compose.yml`** file under section **`volumes:`** (see below)
+
+* #### **step 4:** Set up Kafka console web UI. Configs file **`config.yml`**.
+
+  * ##### **`brokers`:** list of existing brokers (use service hostname)
+
+  ```yml
+  kafka:
+    # Brokers is a list of bootstrap servers with ports.
+    brokers:
+      - "redpanda-0:9092"
+  ```
+
+  * ##### **`schemaRegistry`:** Schema registration, Redpanda already have one
+
+  ```yml
+  schemaRegistry:
+    enabled: true
+    urls:
+      - "http://redpanda-0:8081"
+  ```
+
+  * ##### **`kafkaConnect`:** We are going to use our own **`connector service`** (inside **`compose.yml`**), not a redpanda well knowned connector
+
+  ```yml
+  #----------------------------------------------------------------------------
+  # Kafka Connect configuration (configuration for connecting to external Kafka Connect clusters, not Redpanda Connect)
+  #----------------------------------------------------------------------------
+  kafkaConnect:
+    enabled: true
+    clusters:    
+      - name: my-connect-cluster # this will appear in redpanda console
+        url: "http://connect:8083" # service hostname under compose.yml
+  ```
+
+* #### **step 5:** Set up Mysql. Configs file **`my-custom.cnf`**. Make sure you have these lines (it's help kafka connector to track changes or CDC inside Mysql, every operations are capture by bin logs files).
+
+```conf
+default-authentication-plugin=mysql_native_password
+# 1. Enable Binary Logging
+log-bin=mysql-bin
+binlog_format=ROW
+binlog_row_image=FULL
+
+# 2. Server ID (Must be unique within your replication topology)
+# will be used by kafka connect
+server-id=1
+
+# 3. GTID Mode (Recommended for recovery and consistency)
+# not so much usefull in this case
+gtid_mode=ON
+enforce_gtid_consistency=ON
+```
+
+* #### **step 6:** Set up Minio alias. Inside **`compose.yml`**, take note of the **`command`** section under **`minio service`**. aliases are generally used to run **`mc commands`**. In this case, alias name is **`myalias`**.
+
+```yml
+command: >
+    "minio server /data --console-address ':9001' & 
+     sleep 5; 
+     mc alias set myalias http://localhost:9000 admin password123;
+     wait"
+```
+
+* #### **step 7:** Set up Notifier env file. under folder **`python/notifier`** Rename **`.env.example`** to **`.env`**. Then change **`GOTIFY_URL`** and **`LIMIT_MESSAGES`** values.
+
+```makefile
+# syntax URL gotify://gotify/[key_channel]
+# the key_channel is generated on gotify UI [http://localhost:8023/]
+GOTIFY_URL=gotify://gotify/A_dT4Gc-u-Mp3Ei
+# LIMIT_MESSAGES mean that, you every 4 messages going throw Kafka, you will receive a notification
+LIMIT_MESSAGES=4
+```
+
+* #### **step 8:** Set up Streamlit-app and streamlit Dashboard env files. under folder **`python/streamlit`** and **`python/streamlit-result`** Rename each **`.env.example`** to **`.env`**. Now you can apply some changes if you want to.
+
+* #### **step 9:** Set up Source Mysql json connector. Config file **`tyrok-source-connector.json`**.
+
+  * ##### **"database.hostname": "mysql",** | **"database.port": "3306",** => Mysql host location
+
+  * ##### **"database.user": "nanp"** | **"database.password": "nanp",** => Mysql credentials
+
+  * ##### **"database.server.id": "1",** | **"database.include.list": "TYROK",** | **"table.include.list": "TYROK.client",** => Databases and tables ingested
+
+  * ##### **"topic.creation.enable": true,** => Will create topic if doesn't exists in kafka
+
+  * ##### **"topic.creation.default.partitions": "1",** | **"topic.creation.default.replication.factor": "1",** => Replication factor accross kafka cluster
+
+* #### **step 10:** Set up Sink Minio json connector. Config file **`tyrok-sink-connector.json`**.
+
+  * ##### **"tasks.max": "2",** => Concurent tasks used to ingest data
+
+  * ##### **"store.url": "http://minio:9000",** | **"s3.bucket.name": "client-redpanda",** | **"s3.region": "us-east-1",** => Minio Dest location
+
+  * ##### **"aws.access.key.id": "admin",** | **"aws.secret.access.key": "password123",** => Minio Credentials
+
+  * ##### **"format.class": "io.confluent.connect.s3.format.parquet.ParquetFormat",** | **"parquet.codec": "snappy", ** => files format and compression of parquet files in minio
+
+  * ##### **"partitioner.class": "io.confluent.connect.storage.partitioner.TimeBasedPartitioner",** | **"path.format": "'year'=YYYY/'month'=MM/'day'=dd/'hour'=HH"** => will store data in minio folder with partitions Year, Month, Day and Hour
+
+* #### **step 11:** Start your project inside **`compose.yml`**.
+
+```sh
+# Be sure to be in the folder with compose.yml file
+# start all
+docker compose up -d
+```
+
+
+---
+
 ### **Run project & some cleaning ops**
 
 ```sh
@@ -154,6 +271,87 @@ docker compose up -d
 
 # stop all and clean some volume
 docker compose down -v --remove-orphans
+```
+
+---
+
+### **Troubleshooting**
+
+* #### **clean all data in redpanda:** you can use **`setup-automation`** container to redeploy Sink and source connector
+
+```sh
+# 1- stop all and clean some volume
+docker compose down -v --remove-orphans
+# 2- clean folders
+sudo rm -rf /Change/Path/redpanda/redpanda-0/*
+sudo rm -rf /Change/Path/redpanda/redpanda-1/*
+sudo rm -rf /Change/Path/redpanda/redpanda-2/*
+```
+
+* #### **clean all data in mysql:** you can use **`setup-automation`** container to recreate all databases and tables
+
+```sh
+# 1- stop all and clean some volume
+docker compose down -v --remove-orphans
+# 2- clean folders
+sudo rm -rf /Change/Path/redpanda/mysql/*
+```
+
+* #### **delete minio bucket:** you can use **`setup-automation`** container to recreate all databases and tables
+
+```sh
+# delete a bucket
+docker exec minio mc rb --force myalias/[nom-du-bucket]
+```
+
+---
+
+### **Some commands**
+
+* #### **Kafka:**
+
+```sh
+# 0- connect to kafka container
+docker exec -it redpanda-0 bash
+# 1- move to scripts folder
+cd /opt/kafka/bin/
+
+# list of topics created
+./kafka-topics.sh --list --bootstrap-server localhost:9092
+# describe a topic
+./kafka-topics.sh --describe --topic bank_sandaga.REDPANDA.TYROK.client --bootstrap-server localhost:9092
+# read live data produce inside a topic
+./kafka-console-consumer.sh --topic bank_sandaga.REDPANDA.TYROK.client --from-beginning --bootstrap-server localhost:9092
+```
+
+* #### **Connector:**
+
+```sh
+# list of plugins available inside connector
+curl -s -X GET http://localhost:8093/connector-plugins | jq '.[].class'
+
+# deploy source connector
+curl -X POST http://localhost:8093/connectors -H "Content-Type: application/json" -d @tyrok-source-connector.json
+
+# deploy sink connector
+curl -X POST http://localhost:8093/connectors -H "Content-Type: application/json" -d @tyrok-sink-connector.json
+
+# list of deployed connector
+curl -s http://localhost:8093/connectors | jq
+
+# check status of each connector
+curl -s http://localhost:8093/connectors/tyrok-source-connector/status | jq
+curl -s http://localhost:8093/connectors/tyrok-sink-connector/status | jq
+
+# pause or resume a connector
+curl -X PUT http://localhost:8093/connectors/{connector_name}/pause
+curl -X PUT http://localhost:8093/connectors/{connector_name}/resume
+
+# clean & delete a connector
+curl -X PUT http://localhost:8093/connectors/{connector_name}/stop
+curl -X DELETE http://localhost:8093/connectors/{connector_name}/offsets
+curl -X DELETE http://localhost:8093/connectors/{connector_name}
+
 ```
 
 ---
