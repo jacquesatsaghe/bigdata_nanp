@@ -64,7 +64,13 @@ services:
     volumes:
       - minio_data:/data
       - share_data:/partage
-    command: server /data --console-address ":9001"
+    #command: server /data --console-address ":9001"
+    entrypoint: ["/bin/sh", "-c"] # On force le shell ici
+    command: >
+            "minio server /data --console-address ':9001' & 
+             sleep 5; 
+             mc alias set myalias http://localhost:9000 admin password123;
+             wait"
     restart: always
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
