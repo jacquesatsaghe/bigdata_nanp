@@ -1,0 +1,29 @@
+Transformations:
+    - Les transformations définissent la logique de manipulation des données.
+    - Elles prennent un dataset (RDD ou DataFrame) et en produisent un nouveau
+    
+    Evaluation:
+        lazy-pareusseuse:
+            Spark n'exécute pas les transformations immédiatement lorsqu'elles sont appelées.
+            Spark les enregistre simplement dans un plan d'exécution logique appelé DAG (Graphe Acyclique Dirigé).
+        
+        Types de Transformations:
+            Narrow (Étroites) :
+                filter, map, select
+                Les données restent dans la même partition
+                Elles sont rapides car elles ne nécessitent pas de transfert réseau (shuffle)
+            Wide (Larges) : 
+                groupBy, join, distinct
+                Nécessitent un shuffle (redistribution des données entre les nœuds),
+                ce qui est coûteux en ressources
+
+
+Actions:
+    - Les actions sont les déclencheurs.
+    - Elles forcent Spark à exécuter le DAG de transformations pour produire un résultat final.
+    - Retourne une valeure
+    - valuation Immédiate (Eager Evaluation) :
+        Ici, une action lance instantanément le calcul sur le cluster.
+    - Résultat: 
+        soit la valeur est retournée au programme principal (driver)
+        soit la valeur retournée est écrite vers un système de stockage externe (comme S3 ou HDFS).
