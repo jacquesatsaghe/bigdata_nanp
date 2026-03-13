@@ -11,7 +11,7 @@ For example purpose, your datas (`client`, `product` and `sales`) are stored in 
 <p align="center">
     <picture>
         <source media="(prefers-color-scheme: light dark)" srcset="images/archi.drawio.png">
-        <img src="images/archi.drawio.png" alt="BigData streaming stack (docker)" width="600" height="300">
+        <img src="images/archi.drawio.png" alt="BigData streaming stack (docker)" width="800" height="500">
     </picture>
 </p>
 
