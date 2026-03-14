@@ -131,19 +131,19 @@ volumes:
     driver: local # Define the driver and options under the volume name
     driver_opts:
       type: none
-      device: /home/patrick/Téléchargements/ressources/mysql
+      device: D:\MASTER IA DIT\MASTER2 IA-DIT\N3_Technologie BIG DATA\Ressources\mysql
       o: bind
   minio_data:
     driver: local # Define the driver and options under the volume name
     driver_opts:
       type: none
-      device: /home/patrick/Téléchargements/ressources/minio
+      device: D:\MASTER IA DIT\MASTER2 IA-DIT\N3_Technologie BIG DATA\Ressources\minio
       o: bind
   share_data:
     driver: local # Define the driver and options under the volume name
     driver_opts:
       type: none
-      device: /home/patrick/Téléchargements/ressources/share_folder
+      device: D:\MASTER IA DIT\MASTER2 IA-DIT\N3_Technologie BIG DATA\Ressources\partage
       o: bind
 
 networks:
