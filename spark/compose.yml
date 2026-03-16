@@ -140,6 +140,7 @@ services:
     volumes:
       - jupyter_pyspark_data:/home/jovyan/work
       - share_data:/partage
+      - ./notes:/notes
     healthcheck:
       #test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://jupyter-pyspark:8888/api"]
       test: ["CMD", "curl", "-f", "http://localhost:8888/api/status"]

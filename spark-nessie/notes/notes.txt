@@ -1,0 +1,5 @@
+# GIT: not to push
+git add .
+git rm --cached ./spark-nessie/jars/*.jar
+git commit -am ""
+git push

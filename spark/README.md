@@ -160,6 +160,45 @@ docker exec minio mc rb --force myalias/[nom-du-bucket]
 
 ### **Some commands**
 
+* #### **Launch spark in command line**
+
+  * **`pyspark-shell:`** spark command line `interpreter`, like notebook.
+
+  * **`spark-submit:`** use to run some existing spark script.
+  
+  * **Some Args**
+  
+    * **`--master [URL_MASTER]:`** `[URL_MASTER]` can be `local[*]`, `yarn`, `spark://host:port`, `k8s://...`. Specify cluster manager. In our case it's **`--master spark://spark-master:7077`**.
+
+    * **`--py-files:`** list of additionnals files dependencies `.py`, `.zip`, `.egg` adding to `PYTHONPATH`. In our case we don't have additionnal files.
+    * **`--files:`** list of datas files distributed to every executors (`.csv`, `.json`).
+
+    * **`--conf:`** properties (ex: `spark.executor.memory=800m`).
+
+    * **`--packges:`** list of packages needed by your spark workflow. **`!!! if these packages doesn't exist, spark will download all of them form central repository`**. In our case: `--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262`.
+    
+  ```sh
+  spark-submit job.py
+  ```
+
+* #### **example RUN:**
+
+```bash
+# 1. connect to docker image jupyter-pyspark
+# as ROOT
+docker exec -it jupyter-pyspark bash
+# or as user (jovyan)
+docker exec -it --user jovyan jupyter-pyspark bash -l
+
+# 2. run this command (interpreter or run script):
+# INTERPRETER:
+pyspark --packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262
+# or RUN SCRIPT job.py
+spark-submit --packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262 /notes/job.py
+
+
+```
+
 ---
 
 ## **Project**
