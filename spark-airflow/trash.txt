@@ -1,0 +1,115 @@
+#dags/dbt_dag.py
+
+from datetime import datetime
+from pathlib import Path
+from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig
+from cosmos.profiles import PostgresUserPasswordProfileMapping
+
+profile_config = ProfileConfig(
+    profile_name="default",
+    target_name="dev",
+    profile_mapping=PostgresUserPasswordProfileMapping(
+        conn_id="postgres_default", # Créez cette connexion dans l'UI avec user/password
+        profile_args={"schema": "public"},
+    ),
+)
+
+dbt_postgres_dag = DbtDag(
+    project_config=ProjectConfig(Path("/opt/airflow/dbt")),
+    profile_config=profile_config,
+    execution_config=ExecutionConfig(
+        dbt_executable_path="/opt/airflow/dbt_venv/bin/dbt",
+    ),
+    schedule_interval="@daily",
+    start_date=datetime(2024, 1, 1),
+    catchup=False,
+    dag_id="dbt_transformation",
+)
+
+# table example
+
+Supposons que vous ayez une table raw_orders dans Postgres :
+| id | user_id | order_date | amount | status |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | 101 | 2024-01-01 | 50.0 | 'completed' |
+| 2 | 102 | 2024-01-01 | 30.0 | 'completed' |
+| 3 | 101 | 2024-01-02 | 20.0 | 'returned' |
+
+# dbt_project/models/daily_revenue.sql
+
+-- models/daily_revenue.sql
+
+{{ config(materialized='table') }}
+
+WITH base_orders AS (
+    SELECT 
+        order_date,
+        amount
+    FROM {{ source('public', 'raw_orders') }}
+    WHERE status = 'completed'
+)
+
+SELECT
+    order_date,
+    SUM(amount) as total_revenue,
+    COUNT(*) as order_count
+FROM base_orders
+GROUP BY order_date
+ORDER BY order_date DESC
+
+
+# dbt_project/models/sources.yml
+
+version: 2
+
+sources:
+  - name: public
+    database: airflow  # Nom de la DB dans Postgres
+    schema: public
+    tables:
+      - name: raw_orders
+
+# Configurer les tests dans models/schema.yml (optionnel)
+
+version: 2
+
+models:
+  - name: daily_revenue
+    description: "Table agrégée du chiffre d'affaires quotidien"
+    columns:
+      - name: order_date
+        description: "Date de la transaction"
+        tests:
+          - not_null  # Vérifie qu'il n'y a pas de lignes sans date
+
+      - name: total_revenue
+        description: "Somme totale des ventes"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              # Ce test (via dbt_utils) vérifie que le revenu est >= 0
+              # Note : Nécessite l'installation du package dbt-utils
+
+# Rappel pour les packages (Optionnel)
+# créer un fichier dbt_project/packages.yml
+
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.1.0
+
+
+# Ce que dbt va faire
+
+Lorsque Cosmos lancera ce modèle dans Airflow :
+
+    Il va se connecter à Postgres.
+    Il va créer une nouvelle table nommée daily_revenue.
+    Il va exécuter le SELECT et insérer les résultats.
+
+Résultat dans Postgres :
+Table daily_revenue :
+| order_date | total_revenue | order_count |
+| :--- | :--- | :--- |
+| 2024-01-01 | 80.0 | 2 |
+
