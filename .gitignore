@@ -1,6 +1,7 @@
 # nessie jars exclude
 spark-nessie/jars/*.jar
 spark-nessie/*.zip
+*.bkp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

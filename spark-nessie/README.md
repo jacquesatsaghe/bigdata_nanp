@@ -151,7 +151,7 @@ volumes:
 
 * #### **Step 1:** Create all volumes folders inside your main host (see volumes above)
 
-* #### **step 2:** Clone the repo and move to folder **`saprk-nessie`**
+* #### **step 2:** Clone the repo and move to folder **`spark-nessie`**
 
 * #### **step 3:** Change volumes path inside **`compose.yml`** file under section **`volumes:`** (see above)
 
