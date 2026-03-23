@@ -94,7 +94,7 @@ We will use:
 
 ---
 
-This **Stack** is a simple *BigData Processing stack using BDT* running over *Docker*.
+This **Stack** is a simple *BigData Processing stack using DBT* running over *Docker*.
 
 It will help you to deploy and test a simple **Processing** pipeline using **Docker**, **DBT(SQL)**, **Trino(SQL Engine)** and **nessie(catalog)**
 
