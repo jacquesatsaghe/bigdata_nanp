@@ -96,7 +96,7 @@ We will use:
 
 This **Stack** is a simple *BigData Processing stack using DBT* running over *Docker*.
 
-It will help you to deploy and test a simple **Processing** pipeline using **Docker**, **DBT(SQL)**, **Trino(SQL Engine)** and **nessie(catalog)**
+It will help you to deploy and test a simple **Processing** pipeline using **Docker**, **DBT(Processing SQL)**, **Trino(SQL Engine)** and **nessie(catalog)**
 
 ---
 
@@ -122,15 +122,15 @@ It will help you to deploy and test a simple **Processing** pipeline using **Doc
 
 ## **Files & Folders:**
 
-1- **images:** contains screenshot.
+1- **folder images:** contains screenshot.
 
-2- **notes:** some `example scripts`:
+2- **folder notes:** some `example scripts`:
 
-- `first_test.sql`: basic example of using trino with nessie and minio over trino shell. it's use catalog `nessie`
+- `first_test.sql`: basic example of using trino with nessie and minio over trino shell. it's use catalog `nessie` (`nessie.properties`)
 
-- `second_test.sql`: basic example of using trino with nessie and minio over trino shell. it's use catalog `dbt`
+- `second_test.sql`: basic example of using trino with nessie and minio over trino shell. it's use catalog `dbt` (`dbt.properties`)
 
-3- **trino:** some `trino` config files:
+3- **folder trino:** some `trino` config files:
 
 * **`trino master`**:
 
@@ -156,7 +156,7 @@ It will help you to deploy and test a simple **Processing** pipeline using **Doc
 
   - `config/catalog/dbt.properties`: use by trino to connect with `nessie catalog` and manage schemas and tables inside `dbt.*`.
 
-4- **dbt:** dbt image build, config and models.
+4- **folder dbt:** dbt image build, config and models.
 
 - `Dockerfile`: use to build dbt docker image based on `python:3.11-slim`.
 
