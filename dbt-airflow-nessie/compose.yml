@@ -1,0 +1,375 @@
+name: bigdata_nifi
+
+x-airflow-common:
+  &airflow-common
+  #image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.11.2}
+  build: ./airflow
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true' # set to False if you want your DAGS activated at creation
+    # Chemin vers le binaire dbt dans le venv
+    DBT_EXECUTABLE_PATH: /opt/airflow/dbt_venv/bin/dbt
+    DBT_ROOT_PATH: /opt/airflow/dbt
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    AIRFLOW__OPENLINEAGE__NAMESPACE: dev_dbt
+    AIRFLOW__OPENLINEAGE__DISABLED: "True" 
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /tmp/simple_auth_manager_passwords.json
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: 'airflow:admin'
+    # OPTIMISATION : Réduit la charge CPU du scheduler
+    AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 30 #Airflow vérifie les changements toutes les 30 secondes
+    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 60 # every 60s: Is there any new .py files?
+    AIRFLOW__CORE__PARALLELISM: 4
+    AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: 2    
+    AIRFLOW__CORE__LOAD_DEFAULT_CONNECTIONS: False # Désactive la création automatique des connexions par défaut    
+    AIRFLOW__CORE__LAZY_LOAD_PLUGINS: True # Optimise le "Lazy Loading" (chargement à la demande)
+    AIRFLOW__CORE__TEST_CONNECTION: Enabled # test connection activated
+    # DBT config
+    DBT_PROFILES_DIR: /usr/app
+    DBT_LOG_PATH: /tmp/dbt/logs
+    DBT_TARGET_PATH: /tmp/dbt/target
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./dbt/app:/usr/app
+    - airflow_data_logs:/opt/airflow/logs
+    - airflow_data_plugins:/opt/airflow/plugins
+    - ./simple_auth_manager_passwords.json:/tmp/simple_auth_manager_passwords.json
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    &airflow-common-depends-on    
+    postgres:
+      condition: service_healthy
+    trino:
+      condition: service_healthy
+  networks:
+    - bigdata
+
+
+services:
+
+  catalog:
+    #https://clickhouse.com/docs/use-cases/data-lake/nessie-catalog
+    image: ghcr.io/projectnessie/nessie:0.99.0
+    container_name: catalog
+    hostname: catalog
+    restart: always
+    ports:
+      - 19720:19120
+    depends_on:
+      minio:
+        condition: service_healthy
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - share_data:/partage
+    environment:
+      # Configuration de Nessie pour utiliser MinIO comme backend de stockage
+      # Vous pouvez ajuster ces variables en fonction de votre configuration MinIO
+      #- nessie.version.store.type=IN_MEMORY
+      - nessie.catalog.default-warehouse=warehouse
+      - nessie.catalog.warehouses.warehouse.location=s3://nessie-bucket/warehouse
+      - nessie.catalog.service.s3.default-options.endpoint=http://minio:9000/
+      - nessie.catalog.service.s3.default-options.access-key=urn:nessie-secret:quarkus:nessie.catalog.secrets.access-key
+      - nessie.catalog.service.s3.default-options.path-style-access=true
+      - nessie.catalog.service.s3.default-options.auth-type=STATIC
+      - nessie.catalog.secrets.access-key.name=admin
+      - nessie.catalog.secrets.access-key.secret=password123
+      - nessie.catalog.service.s3.default-options.region=us-east-1
+      - nessie.server.authentication.enabled=false
+      # persistance avec une base de données relationnelle (ex: MySQL/MariaDB)
+      # Configuration du stockage
+      # 1. Active le stockage persistant via JDBC
+      - NESSIE_VERSION_STORE_TYPE=JDBC
+      # 2. Définit le dialecte SQL (MariaDB)
+      - QUARKUS_DATASOURCE_DB_KIND=mariadb
+      - NESSIE_VERSION_STORE_PERSIST_JDBC_DATASOURCE=mariadb # MySQL utilise le driver MariaDB compatible      
+      # Configuration de la source de données (Quarkus)
+      - QUARKUS_DATASOURCE_MARIADB_JDBC_URL=jdbc:mariadb://mariadb:3306/nessie_metadata
+      - QUARKUS_DATASOURCE_MARIADB_USERNAME=mariadb
+      - QUARKUS_DATASOURCE_MARIADB_PASSWORD=password
+      # 4. Optimisation (Optionnel mais recommandé)
+      - QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION=update
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://catalog:19120/api/v1/trees"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - bigdata
+
+  ### USED FOR CATALOG METADATA
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb
+    hostname: mariadb
+    restart: always
+    ports:
+      - 3316:3306
+    environment:
+      MARIADB_USER: mariadb
+      MARIADB_PASSWORD: password
+      MARIADB_DATABASE: nessie_metadata
+      MARIADB_ROOT_PASSWORD: mariadb
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - bigdata
+
+  # 4. Moteur de requête SQL Trino
+  # coordinator=true (Trino en mode coordonnateur)
+  # url: https://trino.io/docs/current/connector/iceberg.html
+  # username: trino
+  # password: NONE (authentification désactivée pour simplifier la configuration)
+  trino:
+    image: trinodb/trino:479
+    container_name: trino
+    hostname: trino
+    restart: always
+    ports:
+      - "18080:8080"
+    volumes:
+      - ./trino/config:/etc/trino
+      #- ./trino/config/catalog/nessie.properties:/etc/trino/catalog/nessie.properties:ro
+      - ./trino/config-coordinator.properties:/etc/trino/config.properties:ro
+      - ./trino/node-coordinator.properties:/etc/trino/node.properties:ro
+      - share_data:/partage
+    healthcheck:
+      # On teste si l'API Trino répond sur le port 8080
+      test: ["CMD", "curl", "-f", "http://trino:8080/v1/info"]
+      interval: 10s    # Fréquence du test
+      timeout: 5s      # Temps d'attente avant échec
+      retries: 10      # Nombre d'essais avant de marquer "unhealthy"
+      start_period: 30s # Temps laissé à Trino pour démarrer avant le 1er test
+    depends_on:
+      catalog:
+        condition: service_healthy
+    networks:
+      - bigdata
+
+  # 4. Moteur de requête SQL Trino
+  # coordinator=false (Trino en mode worker)
+  trino-worker:
+    image: trinodb/trino:479
+    container_name: trino-worker
+    hostname: trino-worker
+    restart: always
+    volumes:
+      - ./trino/config:/etc/trino
+      #- ./trino/config/catalog/nessie.properties:/etc/trino/catalog/nessie.properties:ro
+      - ./trino/config-worker.properties:/etc/trino/config.properties:ro
+      - ./trino/node-worker-1.properties:/etc/trino/node.properties:ro
+      - share_data:/partage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://trino-worker:8081/v1/info"]
+      interval: 10s    # Fréquence du test
+      timeout: 5s      # Temps d'attente avant échec
+      retries: 10      # Nombre d'essais avant de marquer "unhealthy"
+      start_period: 30s # Temps laissé à Trino pour démarrer avant le 1er test
+    depends_on:
+      trino:
+        condition: service_healthy
+    networks:
+      - bigdata
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio
+    hostname: minio
+    ports:
+      - "9030:9000" # API S3
+      - "9031:9001" # Console Web (UI)
+    environment:
+      # Access Key (Username) et de Secret Key (Password)
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    volumes:
+      - minio_data:/data
+      - share_data:/partage
+    entrypoint: ["/bin/sh", "-c"] # On force le shell ici
+    command: >
+            "minio server /data --console-address ':9001' & 
+             sleep 5; 
+             mc alias set myalias http://localhost:9000 admin password123;
+             wait"
+    restart: always
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - bigdata   
+
+  ## Only if you don't want to use airflow (unless, dbt is install inside airflow)
+  #dbt:
+  #  build: ./dbt
+  #  container_name: dbt
+  #  hostname: dbt
+  #  tty: true                  # Indispensable pour garder le conteneur ouvert
+  #  stdin_open: true           # Permet l'interaction
+  #  command: tail -f /dev/null 
+  #  deploy:
+  #    resources:
+  #      limits:
+  #        memory: 512M
+  #  healthcheck:
+  #    test: ["CMD", "dbt", "debug"] # Vérifie la config et la connexion à Trino
+  #    interval: 20s
+  #    timeout: 10s
+  #    retries: 5
+  #    start_period: 10s
+  #  volumes:
+  #    - ./dbt/app:/usr/app
+  #  environment:
+  #    DBT_PROFILES_DIR: /usr/app
+  #  depends_on:
+  #    trino:
+  #      condition: service_started     
+  #  networks:
+  #    - bigdata
+
+  airflow-webserver-dbt:
+    <<: *airflow-common
+    hostname: airflow-webserver-dbt
+    container_name: airflow-webserver-dbt
+    command: webserver --workers 2
+    ports:
+      - "8090:8080"  
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init-dbt:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  airflow-scheduler-dbt:
+    <<: *airflow-common
+    hostname: airflow-scheduler-dbt
+    container_name: airflow-scheduler-dbt
+    command: scheduler    
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init-dbt:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+    ports: 
+      - 5040:4040
+
+  airflow-init-dbt:
+    <<: *airflow-common
+    hostname: airflow-init-dbt
+    container_name: airflow-init-dbt
+    command: bash -c "airflow db migrate && airflow users create \
+      --username airflow \
+      --password airflow \
+      --firstname Admin \
+      --lastname User \
+      --role Admin \
+      --email airflow@example.com"
+
+  # from this folder
+  # docker exec -i $(docker compose ps -q postgres) psql -U postgres -d airflow < [sql_script].sql
+  postgres:
+    image: debezium/postgres:15
+    container_name: postgres
+    hostname: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s 
+    environment: 
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - share_data:/partage
+      - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres -c wal_level=logical -c max_wal_senders=10 -c max_replication_slots=10
+    ports: 
+      - 5536:${POSTGRES_PORT}
+    # OPTIMISATION : Limite les ressources DB
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - bigdata
+
+ 
+
+volumes:
+  minio_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/minio
+      o: bind
+  mariadb_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/mariadb
+      o: bind
+  airflow_data_logs:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/airflow/logs
+      o: bind
+  airflow_data_plugins:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/airflow/plugins
+      o: bind
+  postgres_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/postgres/postgres
+      o: bind
+  share_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/share_folder
+      o: bind
+
+networks:
+  bigdata:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: bigdata_bridge

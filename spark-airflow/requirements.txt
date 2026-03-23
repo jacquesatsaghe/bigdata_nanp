@@ -1,0 +1,4 @@
+psycopg2-binary==2.9.11
+astronomer-cosmos==1.13.1
+apache-airflow-providers-postgres==6.6.1
+apache-airflow-providers-fab==3.5.0

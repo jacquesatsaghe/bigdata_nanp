@@ -1,0 +1,25 @@
+agence:
+  target: dev # you can switch to prod
+  outputs:
+    dev:
+      type: trino
+      host: trino
+      port: 8080
+      user: trino
+      catalog: dbt
+      schema: test_schema
+      threads: 2 # Augmenté pour paralléliser si plusieurs modèles
+      http_scheme: http
+      verify: False
+      cert: True
+    prod:
+      type: trino
+      host: trino
+      port: 8080
+      user: trino
+      catalog: dbt
+      schema: prod_schema
+      threads: 2 # Augmenté pour paralléliser si plusieurs modèles
+      http_scheme: http
+      verify: False
+      cert: True

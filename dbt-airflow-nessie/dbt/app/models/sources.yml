@@ -1,0 +1,9 @@
+version: 2
+sources:
+  - name: agence_source
+    database: nessie
+    schema: agence
+    tables:
+      - name: client
+      - name: product
+      - name: sales
