@@ -5,7 +5,19 @@
 We are going to orchestrate some dbt scripts
 
 We are also going to use iceberg (nessie catalog)
+
+airflow: user(`airflow`), password (`airflow`), bd(`airflow`)
+
 ---
+
+## **PORTS & configs**
+
+* **`UI`**:
+
+  - **airflow webserver UI**: Default (http) -> `8080`, Exposed(http) -> `8090`. **`[http://localhost:8090]`**
+
+---
+
 <p align="center">
     <picture>
         <source media="(prefers-color-scheme: light dark)" srcset="images/airflow1.png">
