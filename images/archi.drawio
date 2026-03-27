@@ -238,6 +238,12 @@
         <mxCell id="hzrPtAXQEhDgas4ZAHmq-71" value="Postgres" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#6a00ff;fontColor=#ffffff;strokeColor=#3700CC;" vertex="1" parent="1">
           <mxGeometry x="1572" y="710" width="60" height="72" as="geometry" />
         </mxCell>
+        <mxCell id="hzrPtAXQEhDgas4ZAHmq-73" value="Postgres" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d80073;fontColor=#ffffff;strokeColor=#A50040;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="600" width="60" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="hzrPtAXQEhDgas4ZAHmq-74" value="AIRFLOW (orchestration)" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fillColor=#d80073;fontColor=#ffffff;strokeColor=#A50040;" vertex="1" parent="1">
+          <mxGeometry x="950" y="625" width="100" height="30" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
