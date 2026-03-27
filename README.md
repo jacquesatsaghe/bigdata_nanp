@@ -1,6 +1,15 @@
 # 🦞 bigdata_nanp — BigData stack (Batchs and stream over docker)
 bigdata tps and stuffs
 
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: light dark)" srcset="images/archi.drawio.png">
+        <img src="images/archi.drawio.png" alt="BigData stack (docker)" width="800" height="500">
+    </picture>
+</p>
+
+---
+
 **Folders:**
 - **[mysql](https://github.com/ngoupatrick/bigdata_nanp/tree/main/mysql)**: Contains sql scripts to setup mysql database
 - **[nifi](https://github.com/ngoupatrick/bigdata_nanp/tree/main/nifi)**: docker labs to ingest datas from mysql database to minio throw nifi
@@ -12,6 +21,8 @@ bigdata tps and stuffs
 * Runtime enviromment for test: **Docker version 29.1.5**.
 * Browser: **Opera 126.x**
 * Others versions: in **compose.yml**
+
+---
 
 ## Install
 
