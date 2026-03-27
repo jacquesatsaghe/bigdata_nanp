@@ -8,23 +8,46 @@ bigdata tps and stuffs
     </picture>
 </p>
 
----
-
-**Folders:**
-- **[mysql](https://github.com/ngoupatrick/bigdata_nanp/tree/main/mysql)**: Contains sql scripts to setup mysql database
-- **[nifi](https://github.com/ngoupatrick/bigdata_nanp/tree/main/nifi)**: docker labs to ingest datas from mysql database to minio throw nifi
-- **[redpanda_stream](https://github.com/ngoupatrick/bigdata_nanp/tree/main/redpanda_stream)**: docker labs to ingest datas from mysql database to minio throw kafka (redpanda) in streaming
-
-## Versions
-
-* SE: **Ubuntu 22.04.5 LTS**
-* Runtime enviromment for test: **Docker version 29.1.5**.
-* Browser: **Opera 126.x**
-* Others versions: in **compose.yml**
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: light dark)" srcset="images/graph1.png">
+        <img src="images/graph1.png" alt="BigData stack (docker)" width="700" height="400">
+    </picture>
+</p>
 
 ---
 
-## Install
+## **`Folders:`**
+
+- **[mysql](https://github.com/ngoupatrick/bigdata_nanp/tree/main/mysql)**: Contains sql scripts to setup **`MYSQL database`**
+
+- **[nifi](https://github.com/ngoupatrick/bigdata_nanp/tree/main/nifi)**: docker labs to ingest datas from mysql database to minio throw **`NIFI`**
+
+- **[redpanda_stream](https://github.com/ngoupatrick/bigdata_nanp/tree/main/redpanda_stream)**: docker labs to ingest datas from mysql database to minio throw **`KAFKA (redpanda)`** in streaming
+
+- **[Spark-nessie](https://github.com/ngoupatrick/bigdata_nanp/tree/main/spark-nessie)**: docker labs to process raw datas (bucket: raw-bucket) inside Minio and push result inside Minio (refine-bucket) throw Nessie Catalog Manager using **`SPARK`**
+
+- **[dbt-nessie](https://github.com/ngoupatrick/bigdata_nanp/tree/main/dbt-nessie)**: docker labs to process refine datas (bucket: refine-bucket) inside Minio and push result inside Minio (marts-bucket) throw Nessie Catalog Manager / Trino Query Engine using **`DBT`**
+
+- **[dbt-airflow-nessie](https://github.com/ngoupatrick/bigdata_nanp/tree/main/dbt-airflow-nessie)**: docker labs to Orchestrate dbt processing using **`AIRFLOW`**
+
+- **[viz](https://github.com/ngoupatrick/bigdata_nanp/tree/main/viz)**: docker labs get some insights and KPI graphs using **`METABASE`**
+
+---
+
+## **`Versions`**
+
+* SE: **`Ubuntu 22.04.5 LTS`**
+
+* Runtime enviromment for test: **`Docker version 29.1.5`**.
+
+* Browser: **`Opera 126.x`**
+
+* Others versions: in **`compose.yml`**
+
+---
+
+## **`Install`**
 
 ### [Docker] (if not already installed)
 
@@ -219,4 +242,4 @@ cd /opt/kafka/bin/
 
 ---
 
-
+Enjoy!
