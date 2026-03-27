@@ -140,7 +140,6 @@ services:
       - "18080:8080"
     volumes:
       - ./trino/config:/etc/trino
-      #- ./trino/config/catalog/nessie.properties:/etc/trino/catalog/nessie.properties:ro
       - ./trino/config-coordinator.properties:/etc/trino/config.properties:ro
       - ./trino/node-coordinator.properties:/etc/trino/node.properties:ro
       - share_data:/partage
@@ -166,7 +165,6 @@ services:
     restart: always
     volumes:
       - ./trino/config:/etc/trino
-      #- ./trino/config/catalog/nessie.properties:/etc/trino/catalog/nessie.properties:ro
       - ./trino/config-worker.properties:/etc/trino/config.properties:ro
       - ./trino/node-worker-1.properties:/etc/trino/node.properties:ro
       - share_data:/partage
@@ -212,39 +210,11 @@ services:
     networks:
       - bigdata   
 
-  ## Only if you don't want to use airflow (unless, dbt is install inside airflow)
-  #dbt:
-  #  build: ./dbt
-  #  container_name: dbt
-  #  hostname: dbt
-  #  tty: true                  # Indispensable pour garder le conteneur ouvert
-  #  stdin_open: true           # Permet l'interaction
-  #  command: tail -f /dev/null 
-  #  deploy:
-  #    resources:
-  #      limits:
-  #        memory: 512M
-  #  healthcheck:
-  #    test: ["CMD", "dbt", "debug"] # Vérifie la config et la connexion à Trino
-  #    interval: 20s
-  #    timeout: 10s
-  #    retries: 5
-  #    start_period: 10s
-  #  volumes:
-  #    - ./dbt/app:/usr/app
-  #  environment:
-  #    DBT_PROFILES_DIR: /usr/app
-  #  depends_on:
-  #    trino:
-  #      condition: service_started     
-  #  networks:
-  #    - bigdata
-
   airflow-webserver-dbt:
     <<: *airflow-common
     hostname: airflow-webserver-dbt
     container_name: airflow-webserver-dbt
-    command: webserver --workers 2
+    command: webserver --workers 3
     ports:
       - "8090:8080"  
     healthcheck:
@@ -300,7 +270,8 @@ services:
   # from this folder
   # docker exec -i $(docker compose ps -q postgres) psql -U postgres -d airflow < [sql_script].sql
   postgres:
-    image: debezium/postgres:15
+    #image: debezium/postgres:15
+    image: postgres:16.13-alpine
     container_name: postgres
     hostname: postgres
     healthcheck:

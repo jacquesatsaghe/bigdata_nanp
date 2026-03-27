@@ -11,7 +11,7 @@ services:
     #restart: unless-stopped
     volumes:
       - share_data:/partage
-    #  #- db_home_light:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 5s
@@ -42,6 +42,8 @@ services:
     depends_on:
       db-light:
         condition: service_healthy
+      trino:
+        condition: service_healthy
     ports:
       - 3400:3000
     volumes:
@@ -58,7 +60,7 @@ services:
       MB_LDAP_ENABLED: false      
       MB_SURVEYS_ENABLED: false  
       MB_NO_SURVEYS: true 
-      MB_LOAD_SAMPLE_CONTENT: true # no examples
+      MB_LOAD_SAMPLE_CONTENT: false # no examples
       MB_PASSWORD_COMPLEXITY: weak
       MB_START_OF_WEEK: monday
       MB_PERSISTED_MODELS_ENABLED: true
@@ -264,6 +266,12 @@ volumes:
     driver_opts:
       type: none
       device: /home/patrick/Téléchargements/ressources/share_folder
+      o: bind
+  postgres_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /home/patrick/Téléchargements/ressources/postgres/postgres_viz
       o: bind
 #  db_home_light:
 #    external: false

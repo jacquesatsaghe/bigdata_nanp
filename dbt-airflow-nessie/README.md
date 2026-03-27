@@ -8,6 +8,13 @@ We are also going to use iceberg (nessie catalog)
 
 airflow: user(`airflow`), password (`airflow`), bd(`airflow`)
 
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: light dark)" srcset="images/archi.drawio.png">
+        <img src="images/archi.drawio.png" alt="BigData stack (docker)" width="800" height="500">
+    </picture>
+</p>
+
 ---
 
 ## **PORTS & configs**

@@ -1,3 +1,7 @@
+user: paul
+mail: paul@mail.com
+pass: lundimardi
+
 WITH
   cte_test AS (
     SELECT
