@@ -1,12 +1,10 @@
-# 🦞 bigdata_nanp - AIRFLOW - dbt orchestration (airflow-dbt) — BigData airflow stack II
+# 🦞 bigdata_nanp - METABASE - Visualisation (Metabase-trino) — BigData VIZ stack
 
 ## **Intro**
 
-We are going to orchestrate some dbt scripts
+We are going to use **`MetaBase`** to look at some insights.
 
-We are also going to use iceberg (nessie catalog)
-
-airflow: user(`airflow`), password (`airflow`), bd(`airflow`)
+We are also going to use iceberg (nessie catalog) alongside **`Trino`** on top of **`Minio`**.
 
 <p align="center">
     <picture>
