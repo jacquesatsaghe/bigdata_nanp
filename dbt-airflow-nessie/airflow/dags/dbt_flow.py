@@ -50,6 +50,10 @@ with DAG(
         bash_command=f"cd /usr/app && {DBT_BIN} test"
     )
     
-    
-
     run_base_models >> [run_marts_models,run_segs_models] >> run_clean >> run_tests
+    
+    
+    
+    
+    
+    

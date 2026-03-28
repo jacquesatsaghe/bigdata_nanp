@@ -1,0 +1,24 @@
+user: paul
+mail: paul@mail.com
+pass: lundimardi
+
+WITH
+  cte_test AS (
+    SELECT
+      USER_ID,
+      sum(TOTAL) s_total
+    FROM
+      orders o
+    GROUP BY
+      USER_ID
+  )
+SELECT
+  USER_ID,
+  s_total,
+  name,
+  LATITUDE,
+  LONGITUDE
+FROM
+  cte_test c
+  JOIN PEOPLE p ON p.ID = c.USER_ID
+order by s_total desc;
